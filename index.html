@@ -100,6 +100,7 @@
   button.secondary { background: var(--panel2); color: var(--text); border-color: var(--border); }
   button.danger { background: var(--bad); color: white; }
   button.cyan { background: var(--cyan); color: var(--bg); }
+  button.shake-on { background: var(--good); color: var(--bg); border-color: var(--bg); }
   button.small { padding: 8px 12px; font-size: 0.55rem; }
   button.tiny { padding: 4px 8px; font-size: 0.5rem; box-shadow: 2px 2px 0 var(--shadow-dark); }
   button.paren-maren {
@@ -553,6 +554,7 @@
         <div class="actions actions-secondary">
           <button id="virtual-bank-btn" class="cyan small" disabled>📒 Anotar sin ×</button>
           <button id="virtual-undo-btn" class="secondary small" disabled>↶ Deshacer</button>
+          <button id="shake-toggle-btn" class="secondary small hidden">📱 Agitar p/ tirar</button>
         </div>
       </div>
     </div>
@@ -1511,6 +1513,65 @@ function tryResume() {
   };
 }
 tryResume();
+
+// ============== SHAKE TO ROLL (mobile) ==============
+const shakeBtn = document.getElementById('shake-toggle-btn');
+let shakeActive = false;
+let lastShakeAt = 0;
+const SHAKE_THRESHOLD = 22;   // m/s^2 magnitude (includes gravity ~9.8 at rest)
+const SHAKE_COOLDOWN = 1200;  // ms between shakes
+
+function onDeviceMotion(e) {
+  const acc = e.accelerationIncludingGravity || e.acceleration;
+  if (!acc) return;
+  const mag = Math.hypot(acc.x || 0, acc.y || 0, acc.z || 0);
+  if (mag < SHAKE_THRESHOLD) return;
+  const now = Date.now();
+  if (now - lastShakeAt < SHAKE_COOLDOWN) return;
+  lastShakeAt = now;
+  if (!state.useVirtual) return;
+  if (state.phase !== 'rolling' && state.phase !== 'multiplier') return;
+  if (virtualRollBtn.disabled) return;
+  virtualRollBtn.click();
+}
+
+function startShake() {
+  if (shakeActive) return;
+  window.addEventListener('devicemotion', onDeviceMotion);
+  shakeActive = true;
+  shakeBtn.classList.add('shake-on');
+  shakeBtn.textContent = '📱 Agitar: ON';
+}
+function stopShake() {
+  if (!shakeActive) return;
+  window.removeEventListener('devicemotion', onDeviceMotion);
+  shakeActive = false;
+  shakeBtn.classList.remove('shake-on');
+  shakeBtn.textContent = '📱 Agitar p/ tirar';
+}
+
+shakeBtn.onclick = async () => {
+  playClick();
+  if (shakeActive) { stopShake(); return; }
+  // iOS 13+ requires explicit permission via user gesture
+  if (typeof DeviceMotionEvent !== 'undefined' &&
+      typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const perm = await DeviceMotionEvent.requestPermission();
+      if (perm === 'granted') startShake();
+      else alert('Permiso denegado. Tocá igual el botón TIRAR.');
+    } catch (err) {
+      alert('No se pudo activar agitar: ' + err.message);
+    }
+  } else {
+    startShake();
+  }
+};
+
+// Mostrar el botón solo si el dispositivo expone DeviceMotionEvent
+if (typeof DeviceMotionEvent !== 'undefined') {
+  shakeBtn.classList.remove('hidden');
+}
 
 function allEqual(arr) { return arr.every(x => x === arr[0]); }
 function escapeHtml(s) {
