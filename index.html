@@ -1383,15 +1383,27 @@ undoHandBtn.onclick = () => {
   startTurn();
 };
 
+function buildLastEatsFletesLine(winnerIdx) {
+  if (state.players.length < 2) return '';
+  const ranks = computeRanks();
+  const maxRank = Math.max(...Object.values(ranks));
+  const lastIdxs = state.players.map((_, i) => i).filter(i => ranks[i] === maxRank && i !== winnerIdx);
+  if (lastIdxs.length === 0) return '';
+  const lastNames = lastIdxs.map(i => state.players[i].name.toUpperCase()).join(' Y ');
+  const n = state.players.length;
+  return `<div style="margin-top:10px;font-size:0.75rem;color:var(--bg);">${escapeHtml(lastNames)} SE COME ${n} FLETES 👋</div>`;
+}
+
 function declareWinner(idx, instantWin) {
   const player = state.players[idx];
   if (!instantWin) player.score = TARGET;
   state.winner = idx;
   state.phase = 'finished';
   winnerBanner.classList.remove('hidden');
-  winnerBanner.textContent = instantWin
+  const winTitle = instantWin
     ? `★ ¡${player.name.toUpperCase()} GANÓ CON 5 DADOS IGUALES! ★`
     : `★ ¡${player.name.toUpperCase()} GANÓ CON ${TARGET} PTS! ★`;
+  winnerBanner.innerHTML = escapeHtml(winTitle) + buildLastEatsFletesLine(idx);
   turnPanel.classList.add('hidden');
   renderPodium();
   rematchBtn.classList.remove('hidden');
@@ -1513,7 +1525,7 @@ function tryResume() {
     if (saved.phase === 'finished') {
       winnerBanner.classList.remove('hidden');
       const wp = state.players[state.winner];
-      winnerBanner.textContent = `★ ¡${wp.name.toUpperCase()} GANÓ CON ${wp.score} PTS! ★`;
+      winnerBanner.innerHTML = escapeHtml(`★ ¡${wp.name.toUpperCase()} GANÓ CON ${wp.score} PTS! ★`) + buildLastEatsFletesLine(state.winner);
       turnPanel.classList.add('hidden');
       renderPodium();
       rematchBtn.classList.remove('hidden');
