@@ -740,49 +740,22 @@ function playCelebrate() {
   buzz([35, 30, 35, 30, 60, 30, 80]);
 }
 
-// ============== INTRO VOICE ==============
+// ============== INTRO AUDIO ==============
 let introPlayed = false;
+const introAudio = new Audio('intro.mp3');
+const playersAudio = new Audio('players.mp3');
+introAudio.preload = 'auto';
+playersAudio.preload = 'auto';
+introAudio.addEventListener('ended', () => {
+  playersAudio.currentTime = 0;
+  playersAudio.play().catch(() => {});
+});
+
 function playIntro() {
   if (introPlayed) return;
   introPlayed = true;
-  ensureAudio();
-  // Dramatic riser (Smash-style buildup)
-  sweep(120, 600, 0.55, 'sawtooth');
-  // Cymbal-ish hit
-  setTimeout(() => {
-    if (!audioCtx || !soundsOn) return;
-    const dur = 0.4;
-    const bufferSize = Math.floor(audioCtx.sampleRate * dur);
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      const t = i / bufferSize;
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 1.5) * 0.45;
-    }
-    const src = audioCtx.createBufferSource();
-    src.buffer = buffer;
-    const hp = audioCtx.createBiquadFilter();
-    hp.type = 'highpass'; hp.frequency.value = 4000;
-    src.connect(hp).connect(audioCtx.destination);
-    src.start();
-  }, 480);
-  // Announcer voice
-  setTimeout(() => {
-    if (!('speechSynthesis' in window)) return;
-    try {
-      const u = new SpeechSynthesisUtterance('Paren Maren');
-      const voices = speechSynthesis.getVoices();
-      const esVoice = voices.find(v => /es/i.test(v.lang) && /male|hombre|jorge|diego|enrique/i.test(v.name))
-                   || voices.find(v => /es/i.test(v.lang))
-                   || voices[0];
-      if (esVoice) u.voice = esVoice;
-      u.lang = 'es-ES';
-      u.rate = 0.78;
-      u.pitch = 0.4;
-      u.volume = 1;
-      speechSynthesis.speak(u);
-    } catch (e) {}
-  }, 650);
+  introAudio.currentTime = 0;
+  introAudio.play().catch(() => {});
 }
 
 function armIntroOnFirstGesture() {
@@ -793,11 +766,6 @@ function armIntroOnFirstGesture() {
   };
   document.addEventListener('pointerdown', fire, true);
   document.addEventListener('keydown', fire, true);
-  // Preload voices (some browsers populate async)
-  if ('speechSynthesis' in window) {
-    speechSynthesis.getVoices();
-    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
-  }
 }
 armIntroOnFirstGesture();
 
