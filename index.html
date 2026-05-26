@@ -651,6 +651,19 @@ function playWin() {
   ensureAudio();
   [523, 659, 784, 1047, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'square'), i * 100));
 }
+// Trombón triste cuando el multiplicador sale 1
+function playSad() {
+  ensureAudio();
+  const notes = [
+    { f: 392, t: 0,   d: 0.22 }, // G4
+    { f: 370, t: 240, d: 0.22 }, // F#4
+    { f: 349, t: 480, d: 0.22 }, // F4
+    { f: 311, t: 720, d: 0.55 }, // Eb4 (sostenido y bajando)
+  ];
+  notes.forEach(n => setTimeout(() => beep(n.f, n.d, 'sawtooth', 0.09), n.t));
+  // pequeño "wah" final descendente
+  setTimeout(() => sweep(311, 130, 0.45, 'sawtooth'), 1280);
+}
 // Festejo cuando se anota con el multiplicador
 function playCelebrate() {
   ensureAudio();
@@ -1303,7 +1316,8 @@ function applyMultRoll(m) {
   renderHandLog();
   showHandResult(player.name, gained, `${state.accumulator} × ${m} = ${gained}`);
   if (won) { declareWinner(state.currentIdx, instantWin); return; }
-  playCelebrate();
+  if (m === 1) playSad();
+  else playCelebrate();
   renderScoreboard();
   saveState();
   setTimeout(nextPlayer, 2200);
