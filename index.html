@@ -363,6 +363,13 @@
   .legend strong.a { color: var(--accent); }
 
   .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .actions-primary { justify-content: center; align-items: center; }
+  .actions-secondary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .actions-secondary button { width: 100%; justify-content: center; }
 
   .history-header {
     display: flex;
@@ -519,11 +526,13 @@
       <div id="normal-dice-section">
         <div class="section-label">▸ DADO NORMAL</div>
         <div class="die-grid" id="normal-die-grid"></div>
-        <div class="actions">
+        <div class="actions actions-primary">
           <button id="stop-btn" class="paren-maren" disabled>¡PAREN MAREN!</button>
+        </div>
+        <div class="actions actions-secondary">
           <button id="bank-btn" class="cyan small" disabled>📒 Anotar sin ×</button>
+          <button id="undo-roll-btn" class="secondary small" disabled>↶ Deshacer</button>
           <button id="lose-btn" class="danger small">💀 Tiré afuera</button>
-          <button id="undo-roll-btn" class="secondary small" disabled>↶ Deshacer tirada</button>
         </div>
       </div>
       <div id="mult-dice-section" class="hidden">
@@ -537,11 +546,13 @@
       <div class="section-label">▸ DADO <span id="virtual-which">NORMAL</span></div>
       <div class="virtual-roller">
         <div id="virtual-die" style="width:140px;height:140px;flex:0 0 auto;"></div>
-        <div class="actions">
+        <div class="actions actions-primary">
           <button id="virtual-roll-btn">🎲 TIRAR</button>
           <button id="virtual-stop-btn" class="paren-maren" disabled>¡PAREN MAREN!</button>
+        </div>
+        <div class="actions actions-secondary">
           <button id="virtual-bank-btn" class="cyan small" disabled>📒 Anotar sin ×</button>
-          <button id="virtual-undo-btn" class="secondary small" disabled>↶ Deshacer tirada</button>
+          <button id="virtual-undo-btn" class="secondary small" disabled>↶ Deshacer</button>
         </div>
       </div>
     </div>
