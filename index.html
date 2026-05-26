@@ -489,6 +489,10 @@
       <input type="checkbox" id="sound-toggle" checked>
       🔊 Sonidos 8-bit
     </label>
+    <label class="toggle">
+      <input type="checkbox" id="haptic-toggle" checked>
+      📳 Vibración (móvil)
+    </label>
   </div>
 
   <button id="start-btn" disabled style="margin-top: 16px;">▶ Comenzar</button>
@@ -596,6 +600,14 @@
 <script>
 'use strict';
 
+// ============== HAPTIC ==============
+let hapticOn = true;
+function buzz(pattern) {
+  if (!hapticOn) return;
+  if (!navigator.vibrate) return;
+  try { navigator.vibrate(pattern); } catch (e) {}
+}
+
 // ============== SOUNDS ==============
 let audioCtx = null;
 let soundsOn = true;
@@ -630,11 +642,11 @@ function sweep(fStart, fEnd, dur, type) {
   gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
   osc.stop(audioCtx.currentTime + dur);
 }
-function playClick() { ensureAudio(); beep(880, 0.05, 'square', 0.06); }
+function playClick() { ensureAudio(); beep(880, 0.05, 'square', 0.06); buzz(12); }
 function playRollTick() { ensureAudio(); beep(440 + Math.random() * 440, 0.03, 'square', 0.05); }
-function playGood(v) { ensureAudio(); beep(600 + v * 60, 0.12, 'square'); }
-function playBust() { ensureAudio(); sweep(400, 80, 0.4, 'sawtooth'); }
-function playParen() { ensureAudio(); [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'square'), i * 70)); }
+function playGood(v) { ensureAudio(); beep(600 + v * 60, 0.12, 'square'); buzz(25); }
+function playBust() { ensureAudio(); sweep(400, 80, 0.4, 'sawtooth'); buzz([80, 50, 120]); }
+function playParen() { ensureAudio(); [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'square'), i * 70)); buzz([25, 30, 25, 30, 50]); }
 // Bonus track — Sonic 3 Carnival Night style (~1 seg)
 function playBonus() {
   ensureAudio();
@@ -663,6 +675,7 @@ function playBonus() {
 function playWin() {
   ensureAudio();
   [523, 659, 784, 1047, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'square'), i * 100));
+  buzz([80, 40, 80, 40, 80, 40, 200]);
 }
 // Trombón triste cuando el multiplicador sale 1
 function playSad() {
@@ -676,6 +689,7 @@ function playSad() {
   notes.forEach(n => setTimeout(() => beep(n.f, n.d, 'sawtooth', 0.09), n.t));
   // pequeño "wah" final descendente
   setTimeout(() => sweep(311, 130, 0.45, 'sawtooth'), 1280);
+  buzz([60, 80, 60, 80, 180]);
 }
 // Festejo cuando se anota con el multiplicador
 function playCelebrate() {
@@ -691,6 +705,7 @@ function playCelebrate() {
     { f: 1319, t: 980, d: 0.30 }, // E6 (hold)
   ];
   melody.forEach(n => setTimeout(() => beep(n.f, n.d, 'square', 0.09), n.t));
+  buzz([35, 30, 35, 30, 60, 30, 80]);
 }
 
 // ============== DICE ==============
@@ -886,6 +901,8 @@ shuffleBtn.onclick = () => {
 };
 
 soundToggle.onchange = () => { soundsOn = soundToggle.checked; };
+const hapticToggle = document.getElementById('haptic-toggle');
+hapticToggle.onchange = () => { hapticOn = hapticToggle.checked; if (hapticOn) buzz(20); };
 virtualToggle.onchange = () => { state.useVirtual = virtualToggle.checked; };
 
 startBtn.onclick = () => {
