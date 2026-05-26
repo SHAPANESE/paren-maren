@@ -571,7 +571,7 @@
       ▸ <strong class="g">4-6</strong> seguís tirando<br>
       ▸ <strong class="r">1-3</strong> termina tu turno (suma sin ×)<br>
       ▸ 4 dados verdes → ¡Paren Maren! obligatorio<br>
-      ▸ 5 dados iguales (4+multi) → <strong class="a">VICTORIA AUTOMÁTICA</strong>
+      ▸ 4 dados iguales + multi igual → <strong class="a">SUPER PAREN MAREN</strong> (victoria automática)
     </div>
   </div>
 
@@ -672,6 +672,38 @@ function playBonus() {
   lead.forEach(n => setTimeout(() => beep(n.f, n.d, 'square', 0.08), n.t));
   bass.forEach(n => setTimeout(() => beep(n.f, n.d, 'triangle', 0.10), n.t));
 }
+function playSneeze() {
+  ensureAudio();
+  if (!soundsOn || !audioCtx) return;
+  // buildup: "ahh..." rising
+  sweep(180, 320, 0.35, 'sawtooth');
+  // release: "chish!" — noise burst descending
+  setTimeout(() => {
+    if (!audioCtx) return;
+    const dur = 0.25;
+    const bufferSize = Math.floor(audioCtx.sampleRate * dur);
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      const t = i / bufferSize;
+      data[i] = (Math.random() * 2 - 1) * (1 - t) * 0.5;
+    }
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(2200, audioCtx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + dur);
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.35;
+    src.connect(filter).connect(gain).connect(audioCtx.destination);
+    src.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+    src.stop(audioCtx.currentTime + dur);
+  }, 360);
+  buzz([200, 60, 120]);
+}
+
 function playWin() {
   ensureAudio();
   [523, 659, 784, 1047, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'square'), i * 100));
@@ -1390,7 +1422,7 @@ function buildLastEatsFletesLine(winnerIdx) {
   const lastIdxs = state.players.map((_, i) => i).filter(i => ranks[i] === maxRank && i !== winnerIdx);
   if (lastIdxs.length === 0) return '';
   const lastNames = lastIdxs.map(i => state.players[i].name.toUpperCase()).join(' Y ');
-  const n = state.players.length;
+  const n = state.players.length - 1;
   return `<div style="margin-top:10px;font-size:0.75rem;color:var(--bg);">${escapeHtml(lastNames)} SE COME ${n} FLETES 👋</div>`;
 }
 
@@ -1401,7 +1433,7 @@ function declareWinner(idx, instantWin) {
   state.phase = 'finished';
   winnerBanner.classList.remove('hidden');
   const winTitle = instantWin
-    ? `★ ¡${player.name.toUpperCase()} GANÓ CON 5 DADOS IGUALES! ★`
+    ? `★ ¡${player.name.toUpperCase()} GANÓ CON SUPER PAREN MAREN! ★`
     : `★ ¡${player.name.toUpperCase()} GANÓ CON ${TARGET} PTS! ★`;
   winnerBanner.innerHTML = escapeHtml(winTitle) + buildLastEatsFletesLine(idx);
   turnPanel.classList.add('hidden');
@@ -1409,6 +1441,7 @@ function declareWinner(idx, instantWin) {
   rematchBtn.classList.remove('hidden');
   renderScoreboard();
   playWin();
+  if (state.players.length >= 2) setTimeout(playSneeze, 1400);
   saveState();
 }
 
