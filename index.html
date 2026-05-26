@@ -1,0 +1,1522 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paren Maren — Anotador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0221;
+    --bg2: #1a0933;
+    --panel: #241454;
+    --panel2: #3d1f6e;
+    --border: #6b3fa0;
+    --text: #f0e9ff;
+    --muted: #a89cc8;
+    --accent: #ffd700;
+    --accent2: #ff8800;
+    --good: #00e676;
+    --bad: #ff3860;
+    --cyan: #00e5ff;
+    --pink: #ff4ec7;
+    --shadow-dark: #000;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 20px;
+    background:
+      repeating-linear-gradient(0deg, transparent 0, transparent 3px, rgba(0,0,0,0.15) 3px, rgba(0,0,0,0.15) 4px),
+      var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 20px 12px;
+    line-height: 1.3;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 {
+    font-family: 'Press Start 2P', monospace;
+    margin: 0;
+    font-size: 1.6rem;
+    color: var(--accent);
+    text-shadow: 3px 3px 0 var(--pink), 6px 6px 0 var(--bg2);
+    letter-spacing: 2px;
+    line-height: 1.4;
+  }
+  .header .sub { font-family: 'Press Start 2P', monospace; color: var(--muted); margin-top: 14px; font-size: 0.6rem; letter-spacing: 1px; }
+  .target-pill {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    background: var(--panel2);
+    border: 3px solid var(--accent);
+    padding: 8px 14px;
+    margin-top: 12px;
+    font-size: 0.65rem;
+    box-shadow: 4px 4px 0 var(--shadow-dark);
+  }
+  .target-pill strong { color: var(--accent); }
+
+  h2 {
+    font-family: 'Press Start 2P', monospace;
+    margin: 0 0 16px;
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 3px dashed var(--border);
+    padding-bottom: 10px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 4px solid var(--border);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 6px 6px 0 var(--shadow-dark), inset 0 0 0 2px var(--bg);
+  }
+
+  button {
+    font-family: 'Press Start 2P', monospace;
+    background: var(--accent);
+    color: var(--bg);
+    border: 3px solid var(--bg);
+    padding: 12px 18px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--shadow-dark);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: transform 0.05s, box-shadow 0.05s;
+  }
+  button:hover:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow-dark); }
+  button:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--shadow-dark); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: 2px 2px 0 var(--shadow-dark); }
+  button.secondary { background: var(--panel2); color: var(--text); border-color: var(--border); }
+  button.danger { background: var(--bad); color: white; }
+  button.cyan { background: var(--cyan); color: var(--bg); }
+  button.small { padding: 8px 12px; font-size: 0.55rem; }
+  button.tiny { padding: 4px 8px; font-size: 0.5rem; box-shadow: 2px 2px 0 var(--shadow-dark); }
+  button.paren-maren {
+    background: var(--pink);
+    color: white;
+    padding: 16px 24px;
+    font-size: 0.85rem;
+    border-color: var(--accent);
+    box-shadow: 4px 4px 0 var(--accent), 8px 8px 0 var(--shadow-dark);
+  }
+  button.paren-maren:hover:not(:disabled) { box-shadow: 2px 2px 0 var(--accent), 4px 4px 0 var(--shadow-dark); }
+  button.paren-maren:active:not(:disabled) { box-shadow: 0 0 0 var(--accent), 0 0 0 var(--shadow-dark); }
+
+  input[type=text] {
+    font-family: 'VT323', monospace;
+    background: var(--bg);
+    color: var(--text);
+    border: 3px solid var(--border);
+    padding: 8px 12px;
+    font-size: 1.2rem;
+    width: 100%;
+    max-width: 280px;
+    outline: none;
+    box-shadow: inset 2px 2px 0 var(--shadow-dark);
+  }
+  input[type=text]:focus { border-color: var(--accent); }
+
+  label.toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.6rem;
+    color: var(--text);
+    cursor: pointer;
+    margin: 6px 0;
+  }
+  label.toggle input { width: 22px; height: 22px; accent-color: var(--accent); }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .players-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+  .player-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--panel2);
+    border: 3px solid var(--border);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.7rem;
+    gap: 8px;
+  }
+  .player-row .name { flex: 1; word-break: break-word; }
+  .player-row .controls { display: flex; gap: 6px; }
+
+  .scoreboard { width: 100%; border-collapse: collapse; font-family: 'VT323', monospace; }
+  .scoreboard th, .scoreboard td {
+    padding: 10px 8px;
+    text-align: left;
+    border-bottom: 2px dashed var(--border);
+    font-size: 1.2rem;
+  }
+  .scoreboard th {
+    color: var(--muted);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .scoreboard tr.clickable { cursor: pointer; }
+  .scoreboard tr.clickable:hover td { background: rgba(255, 215, 0, 0.08); }
+  .scoreboard tr.current td { background: rgba(255, 215, 0, 0.16); }
+  .scoreboard tr.current td:first-child { border-left: 4px solid var(--accent); }
+  .scoreboard tr.winner td { background: rgba(0, 230, 118, 0.18); }
+  .scoreboard tr.selected td { background: rgba(0, 229, 255, 0.15); outline: 2px solid var(--cyan); outline-offset: -2px; }
+  .score-big {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.95rem;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .remaining { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .rank-badge {
+    display: inline-block;
+    min-width: 36px;
+    padding: 4px 8px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.55rem;
+    text-align: center;
+    background: var(--panel);
+    color: var(--muted);
+    border: 2px solid var(--border);
+  }
+  .rank-badge.first { background: var(--accent); color: var(--bg); border-color: var(--bg); }
+  .rank-badge.second { background: #c0c0c0; color: var(--bg); border-color: var(--bg); }
+  .rank-badge.third { background: #cd7f32; color: var(--bg); border-color: var(--bg); }
+  .rank-badge.last { background: var(--bad); color: white; border-color: var(--bg); }
+
+  .die-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin: 16px 0;
+    max-width: 540px;
+  }
+  .die {
+    aspect-ratio: 1;
+    background: #fafafa;
+    border: 4px solid var(--bg);
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--shadow-dark), inset -3px -3px 0 rgba(0,0,0,0.18), inset 3px 3px 0 rgba(255,255,255,0.6);
+    padding: 16%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 6%;
+    transition: transform 0.05s, box-shadow 0.05s;
+    position: relative;
+  }
+  .die:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--shadow-dark), inset -3px -3px 0 rgba(0,0,0,0.18), inset 3px 3px 0 rgba(255,255,255,0.6); }
+  .die:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--shadow-dark), inset -3px -3px 0 rgba(0,0,0,0.18), inset 3px 3px 0 rgba(255,255,255,0.6); }
+  .die.bad { background: #ff6b6b; }
+  .die.good { background: #95e06c; }
+  .die.mult { background: var(--accent); border-color: var(--pink); }
+  .die .pip {
+    background: var(--bg);
+    box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4);
+  }
+  .die .p1 { grid-area: 1/1; } .die .p2 { grid-area: 1/2; } .die .p3 { grid-area: 1/3; }
+  .die .p4 { grid-area: 2/1; } .die .p5 { grid-area: 2/2; } .die .p6 { grid-area: 2/3; }
+  .die .p7 { grid-area: 3/1; } .die .p8 { grid-area: 3/2; } .die .p9 { grid-area: 3/3; }
+
+  /* Big virtual roller */
+  .virtual-roller {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin: 20px 0;
+  }
+  #virtual-die svg { display: block; width: 100%; height: 100%; box-sizing: border-box; box-shadow: 6px 6px 0 var(--shadow-dark); }
+  #virtual-die.rolling { animation: shake 0.06s infinite alternate; }
+  @keyframes shake {
+    from { transform: translate(-3px, -2px) rotate(-3deg); }
+    to { transform: translate(3px, 2px) rotate(3deg); }
+  }
+
+  .rolls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+    min-height: 56px;
+    padding: 12px;
+    background: var(--bg2);
+    border: 3px solid var(--border);
+    align-items: center;
+  }
+  .rolls:empty::before {
+    content: '> SIN TIRADAS_';
+    font-family: 'Press Start 2P', monospace;
+    color: var(--muted);
+    font-size: 0.6rem;
+  }
+  .roll-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 10px;
+    background: #fafafa;
+    color: var(--bg);
+    border: 3px solid var(--bg);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.95rem;
+    box-shadow: 3px 3px 0 var(--shadow-dark);
+  }
+  .roll-num.bad { background: #ff6b6b; }
+  .roll-num.good { background: #95e06c; }
+  .roll-num.mult { background: var(--accent); border-color: var(--pink); }
+  .roll-num.appearing { animation: pop 0.25s ease-out; }
+  @keyframes pop {
+    from { transform: scale(0.3); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .mult-arrow {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1.1rem;
+    color: var(--pink);
+    margin: 0 6px;
+  }
+
+  .acc-box {
+    background: var(--bg);
+    padding: 18px 22px;
+    margin: 16px 0;
+    border: 4px solid var(--accent);
+    box-shadow: 5px 5px 0 var(--shadow-dark);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .acc-box .label { font-family: 'Press Start 2P', monospace; color: var(--cyan); font-size: 0.65rem; letter-spacing: 2px; }
+  .acc-box strong { font-family: 'Press Start 2P', monospace; color: var(--accent); font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+
+  .turn-status {
+    color: var(--text);
+    font-size: 1.15rem;
+    margin: 12px 0 16px;
+    padding: 12px 16px;
+    background: var(--bg2);
+    border-left: 6px solid var(--accent);
+    border-top: 2px solid var(--border);
+    border-right: 2px solid var(--border);
+    border-bottom: 2px solid var(--border);
+  }
+  .section-label { font-family: 'Press Start 2P', monospace; color: var(--cyan); font-size: 0.6rem; margin-bottom: 10px; letter-spacing: 2px; }
+  .hidden { display: none !important; }
+
+  .hand-result {
+    background: var(--bg);
+    border: 4px solid var(--accent);
+    color: var(--text);
+    padding: 18px 22px;
+    text-align: center;
+    margin: 16px 0;
+    box-shadow: 5px 5px 0 var(--shadow-dark);
+    font-family: 'VT323', monospace;
+    font-size: 1.2rem;
+  }
+  .hand-result .big { display: block; font-family: 'Press Start 2P', monospace; color: var(--accent); font-size: 1.5rem; margin: 8px 0 4px; }
+  .hand-result.zero { border-color: var(--bad); }
+  .hand-result.zero .big { color: var(--bad); }
+
+  .winner-banner {
+    background: var(--good);
+    border: 5px solid var(--accent);
+    color: var(--bg);
+    padding: 22px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1rem;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 6px 6px 0 var(--shadow-dark);
+    animation: blink 0.8s infinite alternate;
+    letter-spacing: 1px;
+    line-height: 1.5;
+  }
+  @keyframes blink {
+    from { box-shadow: 6px 6px 0 var(--shadow-dark); }
+    to { box-shadow: 6px 6px 0 var(--shadow-dark), 0 0 24px var(--accent); }
+  }
+
+  .legend { font-family: 'VT323', monospace; font-size: 1.1rem; color: var(--muted); margin-top: 16px; line-height: 1.5; }
+  .legend strong.g { color: var(--good); }
+  .legend strong.r { color: var(--bad); }
+  .legend strong.a { color: var(--accent); }
+
+  .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+
+  .history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .history-header .who { font-family: 'Press Start 2P', monospace; color: var(--accent); font-size: 0.85rem; }
+  .history-hint { font-family: 'VT323', monospace; color: var(--muted); font-size: 1.1rem; text-align: center; padding: 24px 12px; border: 3px dashed var(--border); }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat {
+    background: var(--bg2);
+    border: 3px solid var(--border);
+    padding: 10px 12px;
+  }
+  .stat .lbl { font-family: 'Press Start 2P', monospace; font-size: 0.5rem; color: var(--cyan); letter-spacing: 1px; }
+  .stat .val { font-family: 'Press Start 2P', monospace; font-size: 0.95rem; color: var(--accent); margin-top: 6px; }
+
+  .hand-log { display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; padding-right: 4px; }
+  .hand-log::-webkit-scrollbar { width: 12px; }
+  .hand-log::-webkit-scrollbar-track { background: var(--bg); }
+  .hand-log::-webkit-scrollbar-thumb { background: var(--border); border: 2px solid var(--bg); }
+  .hand-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--bg2);
+    border: 3px solid var(--border);
+  }
+  .hand-row .idx { font-family: 'Press Start 2P', monospace; font-size: 0.6rem; color: var(--cyan); min-width: 32px; }
+  .hand-row .gained { margin-left: auto; font-family: 'Press Start 2P', monospace; font-size: 0.7rem; color: var(--good); }
+  .hand-row .gained.zero { color: var(--muted); }
+  .hand-row .gained.win::after { content: ' 🏆'; }
+  .hand-row .tag { font-family: 'Press Start 2P', monospace; font-size: 0.5rem; padding: 3px 6px; background: var(--panel2); color: var(--muted); border: 2px solid var(--border); letter-spacing: 1px; }
+  .hand-row .tag.bust { color: var(--bad); border-color: var(--bad); }
+  .hand-row .tag.bank { color: var(--cyan); border-color: var(--cyan); }
+  .hand-row .tag.paren { color: var(--pink); border-color: var(--pink); }
+  .hand-row .tag.off { color: var(--bad); border-color: var(--bad); background: rgba(255, 56, 96, 0.15); }
+
+  .podium {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 14px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  .podium .step {
+    text-align: center;
+    background: var(--panel2);
+    border: 4px solid var(--border);
+    padding: 10px;
+    min-width: 110px;
+    box-shadow: 4px 4px 0 var(--shadow-dark);
+  }
+  .podium .step.p1 { background: var(--accent); color: var(--bg); border-color: var(--bg); min-height: 180px; }
+  .podium .step.p2 { background: #c0c0c0; color: var(--bg); border-color: var(--bg); min-height: 150px; }
+  .podium .step.p3 { background: #cd7f32; color: var(--bg); border-color: var(--bg); min-height: 130px; }
+  .podium .step .place { font-family: 'Press Start 2P', monospace; font-size: 1.4rem; margin-bottom: 6px; }
+  .podium .step .name { font-family: 'Press Start 2P', monospace; font-size: 0.7rem; word-break: break-word; }
+  .podium .step .pts { font-family: 'Press Start 2P', monospace; font-size: 0.8rem; margin-top: 8px; }
+
+  @media (max-width: 540px) {
+    .header h1 { font-size: 1.1rem; }
+    .die-grid { grid-template-columns: repeat(3, 1fr); }
+    .acc-box strong { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="header">
+  <h1>PAREN MAREN</h1>
+  <div class="sub">★ ANOTADOR DE DADOS ★</div>
+  <div class="target-pill">META: <strong id="target-display">365</strong> PTS · <span id="year-display"></span></div>
+</div>
+
+<!-- RESUME -->
+<div id="resume-panel" class="panel hidden">
+  <h2>★ PARTIDA GUARDADA ★</h2>
+  <p style="font-size: 1.1rem;">Hay una partida en curso. ¿Querés continuarla?</p>
+  <div class="actions">
+    <button id="resume-btn">▶ Continuar</button>
+    <button id="discard-btn" class="danger">✕ Descartar</button>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="setup" class="panel">
+  <h2>JUGADORES</h2>
+  <div class="row">
+    <input id="player-input" type="text" placeholder="NOMBRE" autocomplete="off">
+    <button id="add-player-btn">+ Agregar</button>
+    <button id="shuffle-btn" class="secondary small">🎲 Sortear orden</button>
+  </div>
+  <div id="players-list" class="players-list"></div>
+
+  <div style="margin-top: 16px;">
+    <label class="toggle">
+      <input type="checkbox" id="virtual-toggle">
+      🎲 Usar dados virtuales (simulador)
+    </label>
+    <label class="toggle">
+      <input type="checkbox" id="sound-toggle" checked>
+      🔊 Sonidos 8-bit
+    </label>
+  </div>
+
+  <button id="start-btn" disabled style="margin-top: 16px;">▶ Comenzar</button>
+</div>
+
+<!-- GAME -->
+<div id="game" class="panel hidden">
+  <div id="winner-banner" class="winner-banner hidden"></div>
+  <div id="podium" class="podium hidden"></div>
+
+  <h2>★ MARCADOR ★</h2>
+  <table class="scoreboard">
+    <thead>
+      <tr><th>#</th><th>Jugador</th><th>Puntaje</th><th>Falta</th></tr>
+    </thead>
+    <tbody id="scoreboard-body"></tbody>
+  </table>
+  <div style="font-family:'VT323',monospace; color: var(--muted); font-size: 1rem; margin-top: 6px;">▸ tocá un jugador para ver su historial y estadísticas</div>
+
+  <div id="turn-panel" style="margin-top: 28px;">
+    <h2>TURNO: <span id="current-player" style="color: var(--text);"></span></h2>
+
+    <div class="acc-box">
+      <span class="label">ACUMULADO</span>
+      <strong id="accumulator">0</strong>
+    </div>
+
+    <div id="hand-result" class="hand-result hidden"></div>
+    <div class="turn-status" id="turn-status">► Tirá un dado y tocá el valor que salió.</div>
+
+    <div class="section-label">▸ MANO ACTUAL</div>
+    <div class="rolls" id="rolls"></div>
+
+    <!-- Manual dice mode -->
+    <div id="manual-section">
+      <div id="normal-dice-section">
+        <div class="section-label">▸ DADO NORMAL</div>
+        <div class="die-grid" id="normal-die-grid"></div>
+        <div class="actions">
+          <button id="stop-btn" class="paren-maren" disabled>¡PAREN MAREN!</button>
+          <button id="bank-btn" class="cyan small" disabled>📒 Anotar sin ×</button>
+          <button id="lose-btn" class="danger small">💀 Tiré afuera</button>
+          <button id="undo-roll-btn" class="secondary small" disabled>↶ Deshacer tirada</button>
+        </div>
+      </div>
+      <div id="mult-dice-section" class="hidden">
+        <div class="section-label">▸ DADO MULTIPLICADOR</div>
+        <div class="die-grid" id="mult-die-grid"></div>
+      </div>
+    </div>
+
+    <!-- Virtual dice mode -->
+    <div id="virtual-section" class="hidden">
+      <div class="section-label">▸ DADO <span id="virtual-which">NORMAL</span></div>
+      <div class="virtual-roller">
+        <div id="virtual-die" style="width:140px;height:140px;flex:0 0 auto;"></div>
+        <div class="actions">
+          <button id="virtual-roll-btn">🎲 TIRAR</button>
+          <button id="virtual-stop-btn" class="paren-maren" disabled>¡PAREN MAREN!</button>
+          <button id="virtual-bank-btn" class="cyan small" disabled>📒 Anotar sin ×</button>
+          <button id="virtual-undo-btn" class="secondary small" disabled>↶ Deshacer tirada</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top: 12px;">
+      <button id="undo-hand-btn" class="cyan small" disabled>↶ Deshacer última mano</button>
+    </div>
+
+    <div class="legend">
+      ▸ <strong class="g">4-6</strong> seguís tirando<br>
+      ▸ <strong class="r">1-3</strong> termina tu turno (suma sin ×)<br>
+      ▸ 4 dados verdes → ¡Paren Maren! obligatorio<br>
+      ▸ 5 dados iguales (4+multi) → <strong class="a">VICTORIA AUTOMÁTICA</strong>
+    </div>
+  </div>
+
+  <div style="margin-top: 32px;">
+    <div class="history-header">
+      <h2 style="margin: 0; border: 0; padding: 0;">▸ <span id="history-who" class="who">—</span></h2>
+      <button id="history-clear-btn" class="secondary small hidden">Cerrar</button>
+    </div>
+    <div id="history-hint" class="history-hint">▸ Tocá un jugador en el marcador para ver su historial y stats.</div>
+    <div id="stats-grid" class="stats-grid hidden"></div>
+    <div class="hand-log hidden" id="hand-log"></div>
+  </div>
+
+  <div class="actions" style="margin-top: 28px;">
+    <button id="rematch-btn" class="cyan small hidden">⟲ Revancha</button>
+    <button id="reset-btn" class="danger small">⟲ Reiniciar todo</button>
+  </div>
+</div>
+
+<footer style="text-align: center; margin-top: 40px; padding: 20px; font-family: 'Press Start 2P', monospace; font-size: 0.65rem; color: var(--muted); letter-spacing: 2px;">
+  ★ MADE BY <span style="color: var(--accent); text-shadow: 2px 2px 0 var(--pink);">SHAPA</span> ★
+</footer>
+
+</div>
+
+<script>
+'use strict';
+
+// ============== SOUNDS ==============
+let audioCtx = null;
+let soundsOn = true;
+function ensureAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch (e) { audioCtx = null; }
+  }
+}
+function beep(freq, dur, type, gainStart) {
+  if (!soundsOn || !audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || 'square';
+  osc.frequency.value = freq;
+  gain.gain.value = gainStart || 0.08;
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+  osc.stop(audioCtx.currentTime + dur);
+}
+function sweep(fStart, fEnd, dur, type) {
+  if (!soundsOn || !audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || 'square';
+  osc.frequency.setValueAtTime(fStart, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(50, fEnd), audioCtx.currentTime + dur);
+  gain.gain.value = 0.08;
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+  osc.stop(audioCtx.currentTime + dur);
+}
+function playClick() { ensureAudio(); beep(880, 0.05, 'square', 0.06); }
+function playRollTick() { ensureAudio(); beep(440 + Math.random() * 440, 0.03, 'square', 0.05); }
+function playGood(v) { ensureAudio(); beep(600 + v * 60, 0.12, 'square'); }
+function playBust() { ensureAudio(); sweep(400, 80, 0.4, 'sawtooth'); }
+function playParen() { ensureAudio(); [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'square'), i * 70)); }
+// Bonus track — Sonic 3 Carnival Night style (~1 seg)
+function playBonus() {
+  ensureAudio();
+  const E5=659, G5=784, B5=988, D6=1175, E6=1319, G6=1568, B6=1976;
+
+  const lead = [
+    { f: E5, t: 0,   d: 0.07 },
+    { f: G5, t: 80,  d: 0.07 },
+    { f: B5, t: 160, d: 0.07 },
+    { f: E6, t: 240, d: 0.12 },
+    { f: D6, t: 380, d: 0.07 },
+    { f: B5, t: 460, d: 0.07 },
+    { f: G6, t: 560, d: 0.08 },
+    { f: E6, t: 660, d: 0.08 },
+    { f: B6, t: 770, d: 0.22 },
+  ];
+  const bass = [
+    { f: E5/2, t: 0,   d: 0.10 },
+    { f: B5/2, t: 250, d: 0.10 },
+    { f: E5/2, t: 500, d: 0.10 },
+    { f: B5/2, t: 770, d: 0.22 },
+  ];
+  lead.forEach(n => setTimeout(() => beep(n.f, n.d, 'square', 0.08), n.t));
+  bass.forEach(n => setTimeout(() => beep(n.f, n.d, 'triangle', 0.10), n.t));
+}
+function playWin() {
+  ensureAudio();
+  [523, 659, 784, 1047, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'square'), i * 100));
+}
+// Festejo cuando se anota con el multiplicador
+function playCelebrate() {
+  ensureAudio();
+  const melody = [
+    { f: 784, t: 0,   d: 0.10 },  // G5
+    { f: 784, t: 110, d: 0.10 },  // G5
+    { f: 784, t: 220, d: 0.10 },  // G5
+    { f: 1047, t: 360, d: 0.22 }, // C6 (hold)
+    { f: 880,  t: 620, d: 0.10 }, // A5
+    { f: 1047, t: 740, d: 0.10 }, // C6
+    { f: 1175, t: 860, d: 0.10 }, // D6
+    { f: 1319, t: 980, d: 0.30 }, // E6 (hold)
+  ];
+  melody.forEach(n => setTimeout(() => beep(n.f, n.d, 'square', 0.09), n.t));
+}
+
+// ============== DICE ==============
+const PIPS = {
+  1: [5],
+  2: [1, 9],
+  3: [1, 5, 9],
+  4: [1, 3, 7, 9],
+  5: [1, 3, 5, 7, 9],
+  6: [1, 3, 4, 6, 7, 9],
+};
+
+function setDieFace(el, value, classes) {
+  el.className = 'die ' + (classes || '');
+  el.innerHTML = '';
+  (PIPS[value] || []).forEach(pos => {
+    const pip = document.createElement('span');
+    pip.className = 'pip p' + pos;
+    pip.style.cssText = 'display:block;width:100%;height:100%;background:#0d0221;box-shadow:inset -2px -2px 0 rgba(0,0,0,0.4);';
+    el.appendChild(pip);
+  });
+  el.dataset.v = value;
+}
+
+// Virtual die uses inline SVG (no CSS dependency on .die rules)
+const SVG_PIP_POSITIONS = {
+  1: [[50,50]],
+  2: [[25,25],[75,75]],
+  3: [[25,25],[50,50],[75,75]],
+  4: [[25,25],[25,75],[75,25],[75,75]],
+  5: [[25,25],[25,75],[50,50],[75,25],[75,75]],
+  6: [[25,25],[25,50],[25,75],[75,25],[75,50],[75,75]],
+};
+function renderVirtualDie(value, isMult) {
+  const bg = isMult ? '#ffd700' : '#fafafa';
+  const borderColor = isMult ? '#ff4ec7' : '#0d0221';
+  const pipColor = '#0d0221';
+  const pips = (SVG_PIP_POSITIONS[value] || []).map(([x,y]) =>
+    `<rect x="${x-8}" y="${y-8}" width="16" height="16" fill="${pipColor}"/>`
+  ).join('');
+  const el = document.getElementById('virtual-die');
+  if (!el) return;
+  el.innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" style="background:${bg};border:5px solid ${borderColor};">${pips}</svg>`;
+  el.dataset.v = value;
+  el.dataset.mult = isMult ? '1' : '0';
+}
+
+function buildDieFace(value, extraClass) {
+  const div = document.createElement('div');
+  setDieFace(div, value, extraClass);
+  return div;
+}
+
+function buildRollNum(value, extraClass, animate) {
+  const span = document.createElement('span');
+  span.className = 'roll-num ' + (extraClass || '') + (animate ? ' appearing' : '');
+  span.textContent = value;
+  return span;
+}
+
+// ============== STATE ==============
+const STORAGE_KEY = 'parenMaren.v1';
+const year = new Date().getFullYear();
+const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+const TARGET = isLeap ? 366 : 365;
+document.getElementById('target-display').textContent = TARGET;
+document.getElementById('year-display').textContent = year + (isLeap ? ' BISIESTO' : '');
+
+const state = {
+  players: [],
+  currentIdx: 0,
+  rolls: [],
+  accumulator: 0,
+  phase: 'setup',
+  winner: null,
+  hands: [],            // {playerIdx, playerName, rolls, mult, gained, outcome}
+  snapshots: [],        // history-state snapshots for undo-last-hand
+  selectedHistoryIdx: null,
+  useVirtual: false,
+};
+
+function saveState() {
+  try {
+    const payload = {
+      players: state.players,
+      currentIdx: state.currentIdx,
+      rolls: state.rolls,
+      accumulator: state.accumulator,
+      phase: state.phase,
+      winner: state.winner,
+      hands: state.hands,
+      snapshots: state.snapshots,
+      useVirtual: state.useVirtual,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+function clearSaved() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+
+function takeSnapshot() {
+  state.snapshots.push({
+    players: state.players.map(p => ({ name: p.name, score: p.score })),
+    currentIdx: state.currentIdx,
+    hands: state.hands.slice(),
+    winner: state.winner,
+  });
+  if (state.snapshots.length > 50) state.snapshots.shift();
+}
+function restoreSnapshot() {
+  const snap = state.snapshots.pop();
+  if (!snap) return false;
+  state.players.forEach((p, i) => { p.score = snap.players[i].score; });
+  state.currentIdx = snap.currentIdx;
+  state.hands = snap.hands.slice();
+  state.winner = snap.winner;
+  return true;
+}
+
+// ============== SETUP ==============
+const playerInput = document.getElementById('player-input');
+const addPlayerBtn = document.getElementById('add-player-btn');
+const startBtn = document.getElementById('start-btn');
+const shuffleBtn = document.getElementById('shuffle-btn');
+const playersList = document.getElementById('players-list');
+const virtualToggle = document.getElementById('virtual-toggle');
+const soundToggle = document.getElementById('sound-toggle');
+
+function renderPlayersList() {
+  playersList.innerHTML = '';
+  state.players.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'player-row';
+    row.innerHTML = `<span class="name">${i + 1}. ${escapeHtml(p.name)}</span>`;
+    const controls = document.createElement('div');
+    controls.className = 'controls';
+
+    const up = document.createElement('button');
+    up.className = 'tiny secondary';
+    up.textContent = '▲';
+    up.disabled = i === 0;
+    up.onclick = () => { swap(i, i - 1); };
+
+    const down = document.createElement('button');
+    down.className = 'tiny secondary';
+    down.textContent = '▼';
+    down.disabled = i === state.players.length - 1;
+    down.onclick = () => { swap(i, i + 1); };
+
+    const del = document.createElement('button');
+    del.className = 'tiny danger';
+    del.textContent = '✕';
+    del.onclick = () => { state.players.splice(i, 1); renderPlayersList(); };
+
+    controls.append(up, down, del);
+    row.appendChild(controls);
+    playersList.appendChild(row);
+  });
+  startBtn.disabled = state.players.length < 1;
+}
+function swap(a, b) {
+  if (b < 0 || b >= state.players.length) return;
+  const tmp = state.players[a];
+  state.players[a] = state.players[b];
+  state.players[b] = tmp;
+  renderPlayersList();
+}
+
+function addPlayer() {
+  const name = playerInput.value.trim();
+  if (!name) return;
+  state.players.push({ name, score: 0 });
+  playerInput.value = '';
+  playerInput.focus();
+  renderPlayersList();
+}
+addPlayerBtn.onclick = () => { playClick(); addPlayer(); };
+playerInput.addEventListener('keydown', e => { if (e.key === 'Enter') addPlayer(); });
+
+shuffleBtn.onclick = () => {
+  playClick();
+  for (let i = state.players.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [state.players[i], state.players[j]] = [state.players[j], state.players[i]];
+  }
+  renderPlayersList();
+};
+
+soundToggle.onchange = () => { soundsOn = soundToggle.checked; };
+virtualToggle.onchange = () => { state.useVirtual = virtualToggle.checked; };
+
+startBtn.onclick = () => {
+  if (state.players.length < 1) {
+    alert('Agregá al menos un jugador antes de comenzar.');
+    playerInput.focus();
+    return;
+  }
+  ensureAudio();
+  playClick();
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  applyVirtualMode();
+  startTurn();
+};
+
+// Initial UI sync (so disabled state reflects empty player list)
+renderPlayersList();
+
+// ============== GAME UI ==============
+const scoreboardBody = document.getElementById('scoreboard-body');
+const currentPlayerEl = document.getElementById('current-player');
+const accumulatorEl = document.getElementById('accumulator');
+const rollsEl = document.getElementById('rolls');
+const turnStatus = document.getElementById('turn-status');
+const stopBtn = document.getElementById('stop-btn');
+const bankBtn = document.getElementById('bank-btn');
+const virtualBankBtn = document.getElementById('virtual-bank-btn');
+const loseBtn = document.getElementById('lose-btn');
+const undoRollBtn = document.getElementById('undo-roll-btn');
+const undoHandBtn = document.getElementById('undo-hand-btn');
+const normalSection = document.getElementById('normal-dice-section');
+const multSection = document.getElementById('mult-dice-section');
+const manualSection = document.getElementById('manual-section');
+const virtualSection = document.getElementById('virtual-section');
+const virtualDieEl = document.getElementById('virtual-die');
+const virtualWhichEl = document.getElementById('virtual-which');
+const virtualRollBtn = document.getElementById('virtual-roll-btn');
+const virtualStopBtn = document.getElementById('virtual-stop-btn');
+const virtualUndoBtn = document.getElementById('virtual-undo-btn');
+const turnPanel = document.getElementById('turn-panel');
+const winnerBanner = document.getElementById('winner-banner');
+const podiumEl = document.getElementById('podium');
+const handResultEl = document.getElementById('hand-result');
+const handLogEl = document.getElementById('hand-log');
+const historyWhoEl = document.getElementById('history-who');
+const historyHintEl = document.getElementById('history-hint');
+const historyClearBtn = document.getElementById('history-clear-btn');
+const statsGrid = document.getElementById('stats-grid');
+const rematchBtn = document.getElementById('rematch-btn');
+
+// Build manual dice
+const normalGrid = document.getElementById('normal-die-grid');
+const multGrid = document.getElementById('mult-die-grid');
+for (let v = 1; v <= 6; v++) {
+  const cls = v <= 3 ? 'bad' : 'good';
+  const die = buildDieFace(v, cls);
+  die.addEventListener('click', () => { playClick(); animateAndPlay(v, 'normal'); });
+  normalGrid.appendChild(die);
+
+  const multDie = buildDieFace(v, 'mult');
+  multDie.addEventListener('click', () => { playClick(); animateAndPlay(v, 'mult'); });
+  multGrid.appendChild(multDie);
+}
+
+function applyVirtualMode() {
+  if (state.useVirtual) {
+    manualSection.classList.add('hidden');
+    normalSection.classList.add('hidden');
+    multSection.classList.add('hidden');
+    virtualSection.classList.remove('hidden');
+    renderVirtualDie(5, false);
+  } else {
+    virtualSection.classList.add('hidden');
+    manualSection.classList.remove('hidden');
+  }
+}
+
+function computeRanks() {
+  const sorted = state.players.map((p, i) => ({ i, score: p.score })).sort((a, b) => b.score - a.score);
+  const ranks = {};
+  let lastScore = null, lastRank = 0;
+  sorted.forEach((entry, pos) => {
+    if (entry.score !== lastScore) { lastRank = pos + 1; lastScore = entry.score; }
+    ranks[entry.i] = lastRank;
+  });
+  return ranks;
+}
+
+function renderScoreboard() {
+  scoreboardBody.innerHTML = '';
+  const ranks = computeRanks();
+  const maxRank = Math.max(...Object.values(ranks));
+  const order = state.players.map((p, i) => i).sort((a, b) => ranks[a] - ranks[b] || a - b);
+  order.forEach(i => {
+    const p = state.players[i];
+    const tr = document.createElement('tr');
+    tr.classList.add('clickable');
+    if (state.winner === i) tr.classList.add('winner');
+    else if (i === state.currentIdx && state.phase !== 'finished') tr.classList.add('current');
+    if (state.selectedHistoryIdx === i) tr.classList.add('selected');
+    const remaining = Math.max(0, TARGET - p.score);
+    const rank = ranks[i];
+    let rankCls = '';
+    if (state.players.length > 1) {
+      if (rank === 1) rankCls = 'first';
+      else if (rank === 2) rankCls = 'second';
+      else if (rank === 3) rankCls = 'third';
+      if (rank === maxRank && rank > 3) rankCls = 'last';
+    }
+    tr.innerHTML = `<td><span class="rank-badge ${rankCls}">${rank}°</span></td><td>${escapeHtml(p.name)}</td><td class="score-big">${p.score}</td><td class="remaining">${remaining}</td>`;
+    tr.addEventListener('click', () => selectPlayerHistory(i));
+    scoreboardBody.appendChild(tr);
+  });
+}
+
+function selectPlayerHistory(idx) {
+  playClick();
+  state.selectedHistoryIdx = state.selectedHistoryIdx === idx ? null : idx;
+  renderHandLog();
+  renderScoreboard();
+}
+historyClearBtn.onclick = () => { state.selectedHistoryIdx = null; renderHandLog(); renderScoreboard(); };
+
+function computeStats(playerIdx) {
+  const hs = state.hands.filter(h => h.playerIdx === playerIdx);
+  if (hs.length === 0) return null;
+  const gained = hs.map(h => h.gained);
+  const total = gained.reduce((a, b) => a + b, 0);
+  return {
+    hands: hs.length,
+    total,
+    best: Math.max(...gained),
+    avg: Math.round(total / hs.length),
+    parens: hs.filter(h => h.outcome === 'paren' || h.outcome === 'win' && h.mult != null).length,
+    busts: hs.filter(h => h.outcome === 'bust').length,
+  };
+}
+
+function renderHandLog() {
+  if (state.selectedHistoryIdx === null) {
+    historyWhoEl.textContent = '—';
+    historyHintEl.classList.remove('hidden');
+    handLogEl.classList.add('hidden');
+    statsGrid.classList.add('hidden');
+    historyClearBtn.classList.add('hidden');
+    handLogEl.innerHTML = '';
+    statsGrid.innerHTML = '';
+    return;
+  }
+  const player = state.players[state.selectedHistoryIdx];
+  historyWhoEl.textContent = player.name.toUpperCase();
+  historyHintEl.classList.add('hidden');
+  historyClearBtn.classList.remove('hidden');
+
+  const stats = computeStats(state.selectedHistoryIdx);
+  statsGrid.innerHTML = '';
+  if (stats) {
+    statsGrid.classList.remove('hidden');
+    const entries = [
+      ['MANOS', stats.hands],
+      ['TOTAL', stats.total],
+      ['MEJOR', stats.best],
+      ['PROMEDIO', stats.avg],
+      ['PARENS', stats.parens],
+      ['BUSTS (1-3)', stats.busts],
+    ];
+    entries.forEach(([lbl, val]) => {
+      const d = document.createElement('div');
+      d.className = 'stat';
+      d.innerHTML = `<div class="lbl">${lbl}</div><div class="val">${val}</div>`;
+      statsGrid.appendChild(d);
+    });
+  } else {
+    statsGrid.classList.add('hidden');
+  }
+
+  const playerHands = state.hands.filter(h => h.playerIdx === state.selectedHistoryIdx);
+  handLogEl.innerHTML = '';
+  if (playerHands.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'history-hint';
+    empty.textContent = '▸ Sin manos jugadas todavía.';
+    handLogEl.classList.remove('hidden');
+    handLogEl.appendChild(empty);
+    return;
+  }
+  handLogEl.classList.remove('hidden');
+  for (let i = playerHands.length - 1; i >= 0; i--) {
+    const h = playerHands[i];
+    const row = document.createElement('div');
+    row.className = 'hand-row';
+    const idx = document.createElement('span');
+    idx.className = 'idx';
+    idx.textContent = '#' + (i + 1);
+    row.appendChild(idx);
+    h.rolls.forEach(v => row.appendChild(buildRollNum(v, v >= 4 ? 'good' : 'bad')));
+    if (h.mult != null) {
+      const arr = document.createElement('span');
+      arr.className = 'mult-arrow';
+      arr.textContent = '×';
+      row.appendChild(arr);
+      row.appendChild(buildRollNum(h.mult, 'mult'));
+    }
+    const tag = document.createElement('span');
+    tag.className = 'tag ' + h.outcome;
+    tag.textContent = ({ bust: '1-3', bank: 'PLANTÓ', paren: 'PAREN', win: 'WIN', off: 'AFUERA' })[h.outcome] || h.outcome.toUpperCase();
+    row.appendChild(tag);
+    const gained = document.createElement('span');
+    gained.className = 'gained' + (h.gained === 0 ? ' zero' : '') + (h.outcome === 'win' ? ' win' : '');
+    gained.textContent = '+' + h.gained;
+    row.appendChild(gained);
+    handLogEl.appendChild(row);
+  }
+}
+
+function startTurn() {
+  state.rolls = [];
+  state.accumulator = 0;
+  state.phase = 'rolling';
+  currentPlayerEl.textContent = state.players[state.currentIdx].name;
+  accumulatorEl.textContent = '0';
+  rollsEl.innerHTML = '';
+  turnStatus.textContent = '► Tirá un dado y tocá el valor que salió.';
+  clearHandResult();
+  stopBtn.disabled = true;
+  bankBtn.disabled = true;
+  virtualBankBtn.disabled = true;
+  undoRollBtn.disabled = true;
+  virtualStopBtn.disabled = true;
+  virtualUndoBtn.disabled = true;
+  virtualRollBtn.disabled = false;
+  virtualWhichEl.textContent = 'NORMAL';
+  if (state.useVirtual) renderVirtualDie(5, false);
+  if (state.useVirtual) {
+    manualSection.classList.add('hidden');
+    normalSection.classList.add('hidden');
+    multSection.classList.add('hidden');
+    virtualSection.classList.remove('hidden');
+  } else {
+    virtualSection.classList.add('hidden');
+    manualSection.classList.remove('hidden');
+    normalSection.classList.remove('hidden');
+    multSection.classList.add('hidden');
+  }
+  undoHandBtn.disabled = state.hands.length === 0;
+  renderScoreboard();
+  renderHandLog();
+  saveState();
+}
+
+function addRollVisual(v, kind) { rollsEl.appendChild(buildRollNum(v, kind, true)); }
+function addMultVisual(v) {
+  const arrow = document.createElement('span');
+  arrow.className = 'mult-arrow';
+  arrow.textContent = '×';
+  rollsEl.appendChild(arrow);
+  rollsEl.appendChild(buildRollNum(v, 'mult', true));
+}
+
+function showHandResult(playerName, gained, detail) {
+  handResultEl.classList.remove('hidden', 'zero');
+  if (gained === 0) handResultEl.classList.add('zero');
+  handResultEl.innerHTML = `${escapeHtml(playerName).toUpperCase()} SACÓ<span class="big">${gained} PTS</span><div style="color: var(--muted); font-size: 1rem; margin-top: 4px;">${detail}</div>`;
+}
+function clearHandResult() {
+  handResultEl.classList.add('hidden');
+  handResultEl.innerHTML = '';
+}
+
+// --- Dice rolling animation ---
+function animateAndPlay(targetValue, kind) {
+  // kind = 'normal' or 'mult'
+  if (kind === 'normal' && state.phase !== 'rolling') return;
+  if (kind === 'mult' && state.phase !== 'multiplier') return;
+
+  // Disable inputs during animation
+  const wasNormalEnabled = !stopBtn.disabled;
+  stopBtn.disabled = true;
+  undoRollBtn.disabled = true;
+  document.querySelectorAll('#normal-die-grid .die, #mult-die-grid .die').forEach(d => d.style.pointerEvents = 'none');
+
+  // Temporary spinning chip in rolls area
+  const tempSpan = document.createElement('span');
+  tempSpan.className = 'roll-num ' + (kind === 'mult' ? 'mult' : (targetValue >= 4 ? 'good' : 'bad'));
+  tempSpan.textContent = Math.floor(Math.random() * 6) + 1;
+  rollsEl.appendChild(tempSpan);
+
+  let ticks = 0;
+  const totalTicks = 8;
+  const interval = setInterval(() => {
+    ticks++;
+    tempSpan.textContent = Math.floor(Math.random() * 6) + 1;
+    playRollTick();
+    if (ticks >= totalTicks) {
+      clearInterval(interval);
+      tempSpan.remove();
+      document.querySelectorAll('#normal-die-grid .die, #mult-die-grid .die').forEach(d => d.style.pointerEvents = '');
+      if (kind === 'normal') applyNormalRoll(targetValue);
+      else applyMultRoll(targetValue);
+    }
+  }, 60);
+}
+
+function applyNormalRoll(v) {
+  state.rolls.push(v);
+  state.accumulator += v;
+  accumulatorEl.textContent = state.accumulator;
+  const isGood = v >= 4;
+  addRollVisual(v, isGood ? 'good' : 'bad');
+  playGood(v);
+
+  if (state.rolls.length === 4 && allEqual(state.rolls)) {
+    turnStatus.textContent = `★ ¡4 IGUALES (${v})! Si el multi sale ${v}, ¡ganás!`;
+    goToMultiplier();
+    saveState();
+    return;
+  }
+  if (!isGood) { finishTurnNoMultiplier(v); return; }
+  if (state.rolls.length >= 4) {
+    turnStatus.textContent = `► 4 dados verdes — ¡PAREN MAREN! Tirá el multi.`;
+    goToMultiplier();
+    saveState();
+    return;
+  }
+  stopBtn.disabled = false;
+  bankBtn.disabled = false;
+  virtualBankBtn.disabled = false;
+  undoRollBtn.disabled = false;
+  virtualStopBtn.disabled = false;
+  virtualUndoBtn.disabled = false;
+  virtualRollBtn.disabled = false;
+  turnStatus.textContent = `► Salió ${v}. Seguí, ¡PAREN MAREN! o Anotá sin ×.`;
+  saveState();
+}
+
+stopBtn.onclick = () => triggerParenMaren();
+virtualStopBtn.onclick = () => triggerParenMaren();
+function triggerParenMaren() {
+  if (state.phase !== 'rolling') return;
+  if (state.rolls.length === 0) return;
+  playClick();
+  playBonus();
+  turnStatus.textContent = '★ ¡PAREN MAREN! Tirá el dado multiplicador.';
+  goToMultiplier();
+  saveState();
+}
+
+loseBtn.onclick = () => loseTurnOff(true);
+function loseTurnOff(needsConfirm) {
+  if (state.phase !== 'rolling') return;
+  if (needsConfirm && !confirm('¿Tiraste el dado afuera de la mesa? Perdés el turno sin sumar.')) return;
+  playClick();
+  playBust();
+  takeSnapshot();
+  const player = state.players[state.currentIdx];
+  state.phase = 'between';
+  if (state.useVirtual) virtualRollBtn.disabled = true;
+  else { normalSection.classList.add('hidden'); multSection.classList.add('hidden'); }
+  turnStatus.textContent = `💀 ${player.name} tiró el dado afuera. Pierde el turno.`;
+  state.hands.push({ playerIdx: state.currentIdx, playerName: player.name, rolls: state.rolls.slice(), mult: null, gained: 0, outcome: 'off' });
+  renderHandLog();
+  showHandResult(player.name, 0, 'Tiró el dado afuera de la mesa');
+  renderScoreboard();
+  saveState();
+  setTimeout(nextPlayer, 1700);
+}
+
+bankBtn.onclick = () => bankNoMultiplier();
+virtualBankBtn.onclick = () => bankNoMultiplier();
+function bankNoMultiplier() {
+  if (state.phase !== 'rolling') return;
+  if (state.rolls.length === 0) return;
+  playClick();
+  takeSnapshot();
+  const player = state.players[state.currentIdx];
+  const gained = state.accumulator;
+  player.score += gained;
+  state.phase = 'between';
+  if (state.useVirtual) virtualRollBtn.disabled = true;
+  else { normalSection.classList.add('hidden'); multSection.classList.add('hidden'); }
+  turnStatus.textContent = `► ${player.name} se plantó sin multiplicar.`;
+  const won = player.score >= TARGET;
+  state.hands.push({ playerIdx: state.currentIdx, playerName: player.name, rolls: state.rolls.slice(), mult: null, gained, outcome: won ? 'win' : 'bank' });
+  renderHandLog();
+  showHandResult(player.name, gained, 'Se plantó sin multiplicar');
+  if (won) { declareWinner(state.currentIdx, false); return; }
+  renderScoreboard();
+  saveState();
+  setTimeout(nextPlayer, 1700);
+}
+
+function goToMultiplier() {
+  state.phase = 'multiplier';
+  if (state.useVirtual) {
+    virtualWhichEl.textContent = 'MULTIPLICADOR';
+    renderVirtualDie(5, true);
+    virtualStopBtn.disabled = true;
+    virtualBankBtn.disabled = true;
+    virtualUndoBtn.disabled = true;
+    virtualRollBtn.disabled = false;
+  } else {
+    normalSection.classList.add('hidden');
+    multSection.classList.remove('hidden');
+  }
+}
+
+function finishTurnNoMultiplier(lastValue) {
+  takeSnapshot();
+  const player = state.players[state.currentIdx];
+  const gained = state.accumulator;
+  player.score += gained;
+  state.phase = 'between';
+  if (state.useVirtual) virtualRollBtn.disabled = true;
+  else { normalSection.classList.add('hidden'); multSection.classList.add('hidden'); }
+  turnStatus.textContent = `► Salió ${lastValue} (1-3): se corta sin multiplicador.`;
+  const won = player.score >= TARGET;
+  state.hands.push({ playerIdx: state.currentIdx, playerName: player.name, rolls: state.rolls.slice(), mult: null, gained, outcome: won ? 'win' : 'bust' });
+  renderHandLog();
+  showHandResult(player.name, gained, `Cortó con ${lastValue} (1-3)`);
+  playBust();
+  if (won) { declareWinner(state.currentIdx, false); return; }
+  renderScoreboard();
+  saveState();
+  setTimeout(nextPlayer, 1700);
+}
+
+function applyMultRoll(m) {
+  takeSnapshot();
+  state.phase = 'between';
+  if (state.useVirtual) { virtualRollBtn.disabled = true; }
+  else multSection.classList.add('hidden');
+  addMultVisual(m);
+  const player = state.players[state.currentIdx];
+  const instantWin = state.rolls.length === 4 && allEqual(state.rolls) && m === state.rolls[0];
+  const gained = state.accumulator * m;
+  player.score += gained;
+  turnStatus.textContent = `★ ¡PAREN MAREN! Multi = ${m}.`;
+  const won = instantWin || player.score >= TARGET;
+  state.hands.push({ playerIdx: state.currentIdx, playerName: player.name, rolls: state.rolls.slice(), mult: m, gained, outcome: won ? 'win' : 'paren' });
+  renderHandLog();
+  showHandResult(player.name, gained, `${state.accumulator} × ${m} = ${gained}`);
+  if (won) { declareWinner(state.currentIdx, instantWin); return; }
+  playCelebrate();
+  renderScoreboard();
+  saveState();
+  setTimeout(nextPlayer, 2200);
+}
+
+undoRollBtn.onclick = undoLastRoll;
+virtualUndoBtn.onclick = undoLastRoll;
+function undoLastRoll() {
+  if (state.phase !== 'rolling') return;
+  if (state.rolls.length === 0) return;
+  playClick();
+  const v = state.rolls.pop();
+  state.accumulator -= v;
+  accumulatorEl.textContent = state.accumulator;
+  const chips = rollsEl.querySelectorAll('.roll-num');
+  if (chips.length > 0) chips[chips.length - 1].remove();
+  if (state.rolls.length === 0) {
+    undoRollBtn.disabled = true; virtualUndoBtn.disabled = true;
+    stopBtn.disabled = true; virtualStopBtn.disabled = true;
+    bankBtn.disabled = true; virtualBankBtn.disabled = true;
+  }
+  turnStatus.textContent = '► Tirada anterior deshecha.';
+  saveState();
+}
+
+undoHandBtn.onclick = () => {
+  if (state.hands.length === 0) return;
+  if (!confirm('¿Deshacer la última mano?')) return;
+  playClick();
+  const ok = restoreSnapshot();
+  if (!ok) return;
+  state.phase = 'rolling';
+  startTurn();
+};
+
+function declareWinner(idx, instantWin) {
+  const player = state.players[idx];
+  if (!instantWin) player.score = TARGET;
+  state.winner = idx;
+  state.phase = 'finished';
+  winnerBanner.classList.remove('hidden');
+  winnerBanner.textContent = instantWin
+    ? `★ ¡${player.name.toUpperCase()} GANÓ CON 5 DADOS IGUALES! ★`
+    : `★ ¡${player.name.toUpperCase()} GANÓ CON ${TARGET} PTS! ★`;
+  turnPanel.classList.add('hidden');
+  renderPodium();
+  rematchBtn.classList.remove('hidden');
+  renderScoreboard();
+  playWin();
+  saveState();
+}
+
+function renderPodium() {
+  podiumEl.innerHTML = '';
+  podiumEl.classList.remove('hidden');
+  const ranks = computeRanks();
+  const top = state.players
+    .map((p, i) => ({ name: p.name, score: p.score, rank: ranks[i] }))
+    .filter(x => x.rank <= 3)
+    .sort((a, b) => a.rank - b.rank);
+  // arrange in 2-1-3 visual order
+  const order = [top.find(x => x.rank === 2), top.find(x => x.rank === 1), top.find(x => x.rank === 3)].filter(Boolean);
+  order.forEach(x => {
+    const step = document.createElement('div');
+    step.className = 'step p' + x.rank;
+    step.innerHTML = `<div class="place">${x.rank}°</div><div class="name">${escapeHtml(x.name)}</div><div class="pts">${x.score} pts</div>`;
+    podiumEl.appendChild(step);
+  });
+}
+
+function nextPlayer() {
+  state.currentIdx = (state.currentIdx + 1) % state.players.length;
+  startTurn();
+}
+
+// ============== VIRTUAL DICE ==============
+virtualRollBtn.onclick = () => {
+  if (state.phase !== 'rolling' && state.phase !== 'multiplier') return;
+  playClick();
+  const isMult = state.phase === 'multiplier';
+  virtualRollBtn.disabled = true;
+  virtualStopBtn.disabled = true;
+  virtualBankBtn.disabled = true;
+  virtualUndoBtn.disabled = true;
+
+  // 0.5% chance: el dado se va afuera de la mesa (solo en fase normal)
+  if (!isMult && Math.random() < 0.005) {
+    virtualDieEl.classList.add('rolling');
+    setTimeout(() => {
+      virtualDieEl.classList.remove('rolling');
+      turnStatus.textContent = '💀 ¡El dado salió volando de la mesa!';
+      loseTurnOff(false);
+    }, 700);
+    return;
+  }
+
+  // Animate big die: cycle random faces, then settle on final
+  virtualDieEl.classList.add('rolling');
+  const finalV = Math.floor(Math.random() * 6) + 1;
+  let ticks = 0;
+  const totalTicks = 8;
+  const interval = setInterval(() => {
+    ticks++;
+    const v = Math.floor(Math.random() * 6) + 1;
+    renderVirtualDie(v, isMult);
+    playRollTick();
+    if (ticks >= totalTicks) {
+      clearInterval(interval);
+      renderVirtualDie(finalV, isMult);
+      virtualDieEl.classList.remove('rolling');
+      // Settle a moment so the user reads the final value, then apply
+      setTimeout(() => {
+        if (isMult) applyMultRoll(finalV);
+        else applyNormalRoll(finalV);
+      }, 600);
+    }
+  }, 60);
+};
+
+// ============== RESET / REMATCH ==============
+document.getElementById('reset-btn').onclick = () => {
+  if (!confirm('¿REINICIAR TODO? Se borran jugadores y puntajes.')) return;
+  playClick();
+  clearSaved();
+  location.reload();
+};
+
+rematchBtn.onclick = () => {
+  if (!confirm('¿REVANCHA? Mismos jugadores, puntajes a cero.')) return;
+  playClick();
+  state.players.forEach(p => p.score = 0);
+  state.currentIdx = 0;
+  state.winner = null;
+  state.hands = [];
+  state.snapshots = [];
+  state.selectedHistoryIdx = null;
+  winnerBanner.classList.add('hidden');
+  podiumEl.classList.add('hidden');
+  rematchBtn.classList.add('hidden');
+  turnPanel.classList.remove('hidden');
+  renderHandLog();
+  startTurn();
+};
+
+// ============== RESUME ==============
+function tryResume() {
+  const saved = loadState();
+  if (!saved || !saved.players || saved.players.length === 0) return;
+  if (saved.phase === 'finished' && saved.winner != null) {
+    // show finished state with rematch option
+  }
+  document.getElementById('resume-panel').classList.remove('hidden');
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('resume-btn').onclick = () => {
+    playClick();
+    Object.assign(state, saved);
+    state.snapshots = saved.snapshots || [];
+    state.selectedHistoryIdx = null;
+    soundsOn = soundToggle.checked;
+    document.getElementById('resume-panel').classList.add('hidden');
+    document.getElementById('game').classList.remove('hidden');
+    applyVirtualMode();
+    if (saved.phase === 'finished') {
+      winnerBanner.classList.remove('hidden');
+      const wp = state.players[state.winner];
+      winnerBanner.textContent = `★ ¡${wp.name.toUpperCase()} GANÓ CON ${wp.score} PTS! ★`;
+      turnPanel.classList.add('hidden');
+      renderPodium();
+      rematchBtn.classList.remove('hidden');
+      renderScoreboard();
+    } else {
+      startTurn();
+    }
+  };
+  document.getElementById('discard-btn').onclick = () => {
+    playClick();
+    clearSaved();
+    document.getElementById('resume-panel').classList.add('hidden');
+    document.getElementById('setup').classList.remove('hidden');
+  };
+}
+tryResume();
+
+function allEqual(arr) { return arr.every(x => x === arr[0]); }
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ============== KEYBOARD SHORTCUTS ==============
+document.addEventListener('keydown', e => {
+  if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+  if (state.phase === 'rolling') {
+    if (e.key >= '1' && e.key <= '6') {
+      const v = parseInt(e.key, 10);
+      if (state.useVirtual) return;
+      animateAndPlay(v, 'normal');
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      if (!stopBtn.disabled) triggerParenMaren();
+    } else if (e.key === 'Backspace' || e.key === 'z') {
+      if (!undoRollBtn.disabled) undoLastRoll();
+    } else if (e.key === 'r' && state.useVirtual) {
+      virtualRollBtn.click();
+    }
+  } else if (state.phase === 'multiplier') {
+    if (e.key >= '1' && e.key <= '6') {
+      if (state.useVirtual) return;
+      animateAndPlay(parseInt(e.key, 10), 'mult');
+    } else if (e.key === 'r' && state.useVirtual) {
+      virtualRollBtn.click();
+    }
+  }
+});
+</script>
+</body>
+</html>
